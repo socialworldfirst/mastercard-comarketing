@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Co-marketing film — two-page brief</title>
+<link rel="stylesheet" href="wf-deck.css">
+<style>
+  /* brief-only layout, on top of the kit */
+  .lead { position: absolute; left: 37.7px; top: 206px; width: 560px; }
+  .lead p { margin: 0 0 14px; font-size: 17px; line-height: 1.5; }
+  /* the film column rides higher than the text: the title is only 546 wide, so
+     the right side of a cover is clear from y=120 */
+  .films {
+    position: absolute; left: 670.3px; top: 120px; width: 252px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .film { display: block; text-decoration: none; color: inherit; }
+  .film .shot {
+    width: 252px; aspect-ratio: 16/9; border-radius: 5.5px; overflow: hidden;
+    background: var(--wf-panel);
+  }
+  .film .shot img { width: 100%; height: 100%; max-width: 100%; object-fit: cover; display: block; }
+  .film span { display: block; margin-top: 5px; font-size: 9.5px; line-height: 1.35; opacity: .85; }
+
+  .cols { position: absolute; left: 37.7px; top: 104px; width: 884.6px; display: flex; gap: 36px; }
+  .col { flex: 1 1 0; min-width: 0; }
+  .col h3 {
+    margin: 0 0 10px; font-size: 15px; font-weight: 500;
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule);
+  }
+  .col ul { margin: 0; padding: 0; list-style: none; }
+  .col li { font-size: 12.5px; line-height: 1.5; margin-bottom: 9px; padding-left: 13px; position: relative; }
+  .col li::before { content: '•'; position: absolute; left: 0; }
+  .col .d { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.5; margin-bottom: 9px; }
+  .col .d b { flex: 0 0 76px; font-weight: 500; }
+
+  .more {
+    position: absolute; left: 37.7px; bottom: 44px; width: 884.6px;
+    font-size: 11px; opacity: .85;
+  }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- 1 · What this is -->
+  <section class="slide is-cover bg-cover no-num">
+    <h1 class="title" style="top:96px">Co-marketing film</h1>
+    <p class="sub" style="top:152px">A two-page brief for Mastercard</p>
+    <div class="lead">
+        <p>One film about World Card, told by the people who use it: four customers from four
+           markets, each showing a different way the card works in their business.</p>
+        <p>Representatives from Mastercard and WorldFirst introduce and comment on the story,
+           making it a co-branded piece rather than a single-brand case study.</p>
+        <p>WorldFirst produces and funds the film. Both parties publish it.</p>
+    </div>
+    <div class="films">
+        <a class="film" href="https://www.linkedin.com/feed/update/urn:li:activity:7482740399548116993" target="_blank" rel="noopener">
+          <div class="shot"><img src="assets/ref/mastercard_sme_film.webp" alt=""></div>
+          <span>Already published together: Accelerating growth for SMEs</span>
+        </a>
+        <a class="film" href="https://www.linkedin.com/posts/how-prism-grew-from-a-6-person-startup-to-ugcPost-7438007645384417280-sHbH/" target="_blank" rel="noopener">
+          <div class="shot"><img src="assets/ref/prism_customer_film.webp" alt=""></div>
+          <span>The format: the PRISM+ customer film</span>
+        </a>
+    </div>
+  </section>
+
+  <!-- 2 · The exchange and the dates -->
+  <section class="slide bg-pink no-num">
+    <h2 class="title">What each side puts in, and when</h2>
+    <div class="cols" style="top:110px">
+      <div class="col">
+        <h3>WorldFirst provides</h3>
+        <ul>
+          <li>Production and funding of the film.</li>
+          <li>Editing and versioning, including the short-form cuts.</li>
+          <li>Publication across WorldFirst social channels, website and newsletter.</li>
+          <li>A named project contact throughout.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>We ask of Mastercard</h3>
+        <ul>
+          <li>Agreement to appear as the named partner.</li>
+          <li>A contact through whom the Mastercard interviews can be arranged.</li>
+          <li>Brand assets, and approval of the final materials.</li>
+          <li>Publication on Mastercard channels: optional, and the number is Mastercard's decision.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Key dates</h3>
+        <div class="d"><b>21 August</b><span>All interview contacts confirmed on both sides</span></div>
+        <div class="d"><b>28 August</b><span>Full production plan issued to Mastercard for review</span></div>
+        <div class="d"><b>October</b><span>Publication</span></div>
+        <h3 style="margin-top:22px">Mastercard receives</h3>
+        <ul>
+          <li>Named presence in the film and the short-form cuts.</li>
+          <li>The master file and cuts, for use on Mastercard channels.</li>
+          <li>Distribution to the WorldFirst audience.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="more">Full proposal, 14 slides:
+      <a href="https://socialworldfirst.github.io/mastercard-comarketing/">socialworldfirst.github.io/mastercard-comarketing</a></p>
+  </section>
+
+</div>
+
+<div id="nav">
+  <button data-prev>&lsaquo;</button>
+  <span id="counter"></span>
+  <button data-next>&rsaquo;</button>
+  <button data-full>full</button>
+</div>
+<div id="grid"></div>
+
+<script src="wf-deck.js"></script>
+</body>
+</html>
