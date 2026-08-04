@@ -454,7 +454,41 @@ body.editing [contenteditable]:focus  {
   font: 500 13px 'Poppins', sans-serif;
 }
 .slide-tools button:hover { background: var(--wf-pink); }
-#nav [data-save] { background: var(--wf-pink); }
-#nav [data-save]:hover { background: #ff3d78; }
+
+/* ---------- pinned comments -------------------------------------------- */
+
+body.commenting #deck { cursor: crosshair; }
+body.commenting #nav { opacity: 1; }
+
+.wf-pin {
+  position: absolute; z-index: 30;
+  display: flex; align-items: flex-start; gap: 7px;
+  cursor: pointer;
+  /* the dot's point is the anchor, so the pin hangs down-right of the click */
+  transform: translate(-2px, -2px);
+}
+.wf-pin-dot {
+  flex: 0 0 auto;
+  width: 20px; height: 20px; line-height: 20px; text-align: center;
+  border-radius: 50% 50% 50% 2px;
+  background: var(--wf-pink); color: #fff;
+  font: 500 11px 'Poppins', sans-serif;
+  box-shadow: 0 1px 5px rgba(0,0,0,.35);
+}
+.wf-pin-body {
+  max-width: 210px;
+  padding: 6px 9px; border-radius: 5px;
+  background: rgba(18,18,18,.92); color: #fff;
+  font: 400 11px/1.45 'Poppins', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
+  opacity: 0; transform: translateY(-2px);
+  transition: opacity .14s;
+  pointer-events: none;
+}
+.wf-pin:hover .wf-pin-body,
+body.commenting .wf-pin-body { opacity: 1; }
+
+#nav [data-copy] { background: var(--wf-pink); }
+#nav [data-copy]:hover { background: #ff3d78; }
 
 @media print { #nav, #grid, .slide-tools { display: none !important; } }

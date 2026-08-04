@@ -104,8 +104,7 @@
     });
     const b = nav && nav.querySelector('[data-edit]');
     if (b) b.textContent = on ? 'done' : 'edit';
-    const sv = nav && nav.querySelector('[data-save]');
-    if (sv) sv.hidden = !on;
+    if (on) setCommenting(false);
   }
 
   function reindex() {
@@ -116,6 +115,8 @@
     });
     if (grid) { grid.innerHTML = ''; delete grid.dataset.built; }
     fit();
+    bindNoteClicks();
+    renderPins();
   }
 
   function dupSlide(s) {
@@ -138,52 +139,184 @@
     show(Math.min(at, slides.length - 1));
   }
 
-  /* Rebuild index.src.html from the live DOM and hand it back as a download.
-     Injected chrome (logo, page number, edit tools) is stripped so a rebuild
-     does not double it up. */
-  function saveSource() {
-    const copy = document.getElementById('deck').cloneNode(true);
-    copy.querySelectorAll('.logo, .pagenum, .slide-tools').forEach(e => e.remove());
-    copy.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
-    copy.querySelectorAll('.slide').forEach(e => {
-      e.classList.remove('active');
-      if (!e.getAttribute('style')) e.removeAttribute('style');
+  /* ---------- pinned comments -------------------------------------------
+     Click anywhere on a slide in comment mode to drop a pin. Position is stored
+     in stage units, so a pin lands in the same place at any window size.
+     Pins live in localStorage per deck and survive reloads.                    */
+
+  const NOTE_KEY = 'wfdeck_notes_' + location.pathname;
+  let notes = [];          // {n, slide, x, y, near, nearText, text}
+  let commenting = false;
+
+  function loadNotes() {
+    try { notes = JSON.parse(localStorage.getItem(NOTE_KEY)) || []; }
+    catch (_) { notes = []; }
+  }
+  function saveNotes() {
+    try { localStorage.setItem(NOTE_KEY, JSON.stringify(notes)); } catch (_) {}
+  }
+
+  function renumber() { notes.forEach((nt, k) => (nt.n = k + 1)); }
+
+  function renderPins() {
+    document.querySelectorAll('.wf-pin').forEach(e => e.remove());
+    renumber();
+    notes.forEach(nt => {
+      const s = slides[nt.slide - 1];
+      if (!s) return;
+      const pin = document.createElement('div');
+      pin.className = 'wf-pin';
+      pin.style.left = nt.x + 'px';
+      pin.style.top = nt.y + 'px';
+      pin.innerHTML = `<span class="wf-pin-dot">${nt.n}</span>` +
+                      `<span class="wf-pin-body"></span>`;
+      pin.querySelector('.wf-pin-body').textContent = nt.text;
+      pin.onclick = ev => {
+        ev.stopPropagation();
+        const v = prompt(`Comment ${nt.n} — slide ${nt.slide}\n(clear the text to delete)`, nt.text);
+        if (v === null) return;
+        if (!v.trim()) notes = notes.filter(x => x !== nt);
+        else nt.text = v.trim();
+        saveNotes(); renderPins(); updateCount();
+      };
+      s.appendChild(pin);
     });
-    const lang = document.documentElement.getAttribute('lang') || 'en';
-    const src =
-`<!doctype html>
-<html lang="${lang}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
-<title>${document.title}</title>
-<link rel="stylesheet" href="wf-deck.css">
-</head>
-<body>
+    updateCount();
+  }
 
-${copy.outerHTML}
+  function updateCount() {
+    const b = nav && nav.querySelector('[data-copy]');
+    if (b) b.textContent = notes.length ? `copy (${notes.length})` : 'copy';
+  }
 
-<div id="nav">
-  <button data-prev>&lsaquo;</button>
-  <span id="counter"></span>
-  <button data-next>&rsaquo;</button>
-  <button data-grid>grid</button>
-  <button data-full>full</button>
-  <button data-edit>edit</button>
-  <button data-save hidden>save</button>
-</div>
-<div id="grid"></div>
+  /* Bound per slide, so the pin always belongs to the slide that was actually
+     clicked rather than to the engine's current index. */
+  function placeNote(ev) {
+    if (!commenting) return;
+    const s = ev.currentTarget;
+    if (ev.target.closest('.wf-pin, .slide-tools')) return;
+    const r = s.getBoundingClientRect();
+    if (!r.width) return;
+    const sc = r.width / STAGE_W;
+    const x = Math.round((ev.clientX - r.left) / sc);
+    const y = Math.round((ev.clientY - r.top) / sc);
+    if (x < 0 || y < 0 || x > STAGE_W || y > STAGE_H) return;
+    const idx = slides.indexOf(s) + 1;
 
-<script src="wf-deck.js"><\/script>
-</body>
-</html>
-`;
-    const url = URL.createObjectURL(new Blob([src], { type: 'text/html' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = 'index.src.html';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    // name whatever sits under the pin so the comment is unambiguous
+    let near = '', nearText = '';
+    const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+    const anchor = hit && hit.closest && hit.closest(EDITABLE);
+    if (anchor) {
+      const cls = (anchor.getAttribute('class') || '').split(' ')[0];
+      near = cls ? '.' + cls : anchor.tagName.toLowerCase();
+      nearText = (anchor.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 70);
+    }
+    const text = prompt(`Comment on slide ${idx}` + (nearText ? `\nnear: "${nearText}"` : ''), '');
+    if (!text || !text.trim()) return;
+    notes.push({ n: 0, slide: idx, x, y, near, nearText, text: text.trim() });
+    saveNotes(); renderPins();
+  }
+
+  function bindNoteClicks() {
+    slides.forEach(s => {
+      s.removeEventListener('click', placeNote);
+      s.addEventListener('click', placeNote);
+    });
+  }
+
+  function setCommenting(on) {
+    commenting = on;
+    document.body.classList.toggle('commenting', on);
+    const b = nav && nav.querySelector('[data-comment]');
+    if (b) b.textContent = on ? 'done' : 'comment';
+  }
+
+  /* ---------- paste-back prompt ------------------------------------------ */
+
+  const originals = new Map();     // element -> text at load, for diffing edits
+
+  /* Compare on collapsed whitespace. A hidden slide's innerText still carries the
+     source file's line breaks and indentation, so a raw comparison reports every
+     off-screen slide as edited the moment it is first rendered. */
+  const norm = t => (t || '').replace(/\s+/g, ' ').trim();
+
+  function snapshotText() {
+    slides.forEach((s, k) => s.querySelectorAll(EDITABLE).forEach(el => {
+      originals.set(el, { slide: k + 1, text: norm(el.textContent) });
+    }));
+  }
+
+  function collectEdits() {
+    const out = [];
+    slides.forEach((s, k) => s.querySelectorAll(EDITABLE).forEach(el => {
+      const o = originals.get(el);
+      if (!o) return;
+      const now = norm(el.textContent);
+      if (now !== o.text) {
+        const cls = (el.getAttribute('class') || '').split(' ')[0];
+        out.push({ slide: k + 1, sel: cls ? '.' + cls : el.tagName.toLowerCase(),
+                   was: o.text, now });
+      }
+    }));
+    return out;
+  }
+
+  function buildPrompt() {
+    renumber();
+    const edits = collectEdits();
+    const L = [];
+    L.push(`Deck review — ${document.title}`);
+    L.push(`${location.href}`);
+    L.push(`${slides.length} slides · ${notes.length} comment${notes.length === 1 ? '' : 's'} · ${edits.length} text edit${edits.length === 1 ? '' : 's'}`);
+    if (notes.length) {
+      L.push('', 'COMMENTS');
+      notes.slice().sort((a, b) => a.slide - b.slide || a.y - b.y).forEach(nt => {
+        L.push(`[${nt.n}] slide ${nt.slide} @ (${nt.x}, ${nt.y})` +
+               (nt.near ? ` near ${nt.near} "${nt.nearText}"` : ''));
+        L.push(`    ${nt.text}`);
+      });
+    }
+    if (edits.length) {
+      L.push('', 'TEXT EDITS');
+      edits.forEach(e => {
+        L.push(`slide ${e.slide} ${e.sel}`);
+        L.push(`    was: ${e.was}`);
+        L.push(`    now: ${e.now}`);
+      });
+    }
+    if (!notes.length && !edits.length) L.push('', 'No comments or edits yet.');
+    L.push('', 'Apply these to index.src.html, rebuild and ship.');
+    return L.join('\n');
+  }
+
+  function copyPrompt() {
+    const text = buildPrompt();
+    const done = () => {
+      const b = nav && nav.querySelector('[data-copy]');
+      if (!b) return;
+      const was = b.textContent;
+      b.textContent = 'copied';
+      setTimeout(() => { b.textContent = was; updateCount(); }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else fallbackCopy(text, done);
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (_) { window.prompt('Copy this:', text); }
+    ta.remove();
+  }
+
+  function clearNotes() {
+    if (!notes.length) return;
+    if (!confirm(`Clear all ${notes.length} comments?`)) return;
+    notes = []; saveNotes(); renderPins();
   }
 
   function key(e) {
@@ -209,7 +342,8 @@ ${copy.outerHTML}
         break;
       case 'o': case 'O': toggleGrid(); break;
       case 'e': case 'E': e.preventDefault(); setEditing(true); break;
-      case 'Escape': toggleGrid(false); break;
+      case 'c': case 'C': e.preventDefault(); setCommenting(!commenting); break;
+      case 'Escape': toggleGrid(false); setCommenting(false); break;
     }
   }
 
@@ -225,6 +359,10 @@ ${copy.outerHTML}
       }
     });
     fit();
+    snapshotText();
+    loadNotes();
+    bindNoteClicks();
+    renderPins();
     const start = parseInt(location.hash.slice(1), 10);
     show(Number.isFinite(start) && start > 0 ? start - 1 : 0, false);
 
@@ -245,7 +383,9 @@ ${copy.outerHTML}
       nav.querySelector('[data-full]') && (nav.querySelector('[data-full]').onclick = () =>
         document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
       nav.querySelector('[data-edit]') && (nav.querySelector('[data-edit]').onclick = () => setEditing(!editing));
-      nav.querySelector('[data-save]') && (nav.querySelector('[data-save]').onclick = saveSource);
+      nav.querySelector('[data-comment]') && (nav.querySelector('[data-comment]').onclick = () => setCommenting(!commenting));
+      nav.querySelector('[data-copy]') && (nav.querySelector('[data-copy]').onclick = copyPrompt);
+      nav.querySelector('[data-clear]') && (nav.querySelector('[data-clear]').onclick = clearNotes);
     }
     // reveal nav briefly on load
     nav && (nav.classList.add('show'), setTimeout(() => nav.classList.remove('show'), 2200));
