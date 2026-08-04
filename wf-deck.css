@@ -372,6 +372,16 @@ html, body {
 .tbl .y { font-weight: 500; }
 .tbl .tr > span:not(.y):not(:first-child) { opacity: .82; }
 
+/* Links. Never the browser blue — inherit the slide's ink so a link reads the
+   same on pink, light and purple, and carry the emphasis in the underline. */
+.slide a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2.5px;
+  text-decoration-thickness: 1px;
+}
+.slide a:hover { text-decoration-thickness: 2px; }
+
 /* footnote under a table or figure */
 .note {
   position: absolute;
