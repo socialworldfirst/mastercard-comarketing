@@ -27,6 +27,16 @@ def encrypt_payload(plaintext: str, password: str = PASSWORD) -> dict:
         "ciphertext": base64.b64encode(ct).decode("ascii"),
     }
 
+import sys, shutil as _sh
+if "--pull" in sys.argv or "--ship" in sys.argv:
+    dl = pathlib.Path.home() / "Downloads" / "index.src.html"
+    tgt = HERE / "index.src.html"
+    if dl.exists() and (not tgt.exists() or dl.stat().st_mtime > tgt.stat().st_mtime):
+        _sh.copy(dl, tgt); dl.unlink()
+        print("pulled edited source from ~/Downloads")
+    else:
+        print("no newer edited source in ~/Downloads, using the local one")
+
 src = (HERE / "index.src.html").read_text(encoding="utf-8")
 
 # everything between <body> and the deck's <script> tag is the protected payload
@@ -95,7 +105,7 @@ html = """<!doctype html>
 <div id="mcmGate">
   <div id="mcmCard">
     <h2>Co-marketing film</h2>
-    <p>Proposal to Mastercard MENA · draft</p>
+    <p>Proposal to Mastercard · draft</p>
     <form id="mcmForm" onsubmit="return mcmSubmit(event)">
       <input id="mcmInput" type="password" placeholder="password" autocomplete="off" autofocus>
       <button id="mcmBtn" type="submit">Enter</button>
@@ -188,3 +198,14 @@ if shutil.which("rclone"):
         print(f"WARNING: Drive backup failed ({e}). Build is fine, source is local only.")
 else:
     print("WARNING: rclone not found, skipped Drive backup.")
+
+if "--ship" in sys.argv:
+    for cmd in (["git","add","-A"],
+                ["git","-c","user.email=chendifei.cdf@antgroup.com","-c","user.name=socialworldfirst",
+                 "commit","-q","-m","Deck edit"],
+                ["git","push","-q","origin","master"]):
+        r = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True)
+        if r.returncode and "nothing to commit" not in (r.stdout + r.stderr):
+            print(f"git step failed: {' '.join(cmd)}\n{r.stdout}{r.stderr}"); break
+    else:
+        print("shipped, live in about a minute")

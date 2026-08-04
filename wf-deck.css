@@ -428,4 +428,33 @@ html, body {
 }
 #grid .thumb:hover { outline: 2px solid var(--wf-pink); }
 
-@media print { #nav, #grid { display: none !important; } }
+/* ---------- edit mode --------------------------------------------------- */
+
+body.editing #nav { opacity: 1; }
+body.editing [contenteditable] {
+  outline: 1px dashed rgba(127,127,127,.55);
+  outline-offset: 3px;
+  border-radius: 2px;
+  cursor: text;
+}
+body.editing [contenteditable]:hover  { outline-color: rgba(127,127,127,.9); }
+body.editing [contenteditable]:focus  {
+  outline: 2px solid var(--wf-pink);
+  background: rgba(255,255,255,.10);
+}
+.slide-tools {
+  position: absolute; right: 10px; bottom: 8px;
+  display: flex; gap: 5px; z-index: 20;
+}
+.slide-tools button {
+  all: unset;
+  width: 22px; height: 22px; line-height: 22px; text-align: center;
+  border-radius: 4px; cursor: pointer;
+  background: rgba(0,0,0,.42); color: #fff;
+  font: 500 13px 'Poppins', sans-serif;
+}
+.slide-tools button:hover { background: var(--wf-pink); }
+#nav [data-save] { background: var(--wf-pink); }
+#nav [data-save]:hover { background: #ff3d78; }
+
+@media print { #nav, #grid, .slide-tools { display: none !important; } }

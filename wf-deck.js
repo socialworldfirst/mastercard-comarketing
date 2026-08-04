@@ -1,12 +1,23 @@
 /* WorldFirst deck engine.
    Scales the fixed 960x540 stage to the viewport and handles navigation.
 
-   Keys:  ← → space  step   ·  Home / End  jump  ·  F  fullscreen  ·  O or Esc  overview
+   Keys:  ← → space  step  ·  Home / End  jump  ·  F  fullscreen  ·  O  overview
+          E  edit mode    ·  Esc  close overview or leave edit mode
    URL:   #7 opens slide 7                                                          */
 
 (function () {
   const STAGE_W = 960, STAGE_H = 540;
-  let slides = [], i = 0, gridOpen = false;
+  let slides = [], i = 0, gridOpen = false, editing = false;
+
+  /* Everything a person should be able to retype. Structure, layout and images
+     are deliberately not editable — those belong in the source file. */
+  const EDITABLE = [
+    '.title', '.sub', '.body', '.quote', '.note', '.quotebox',
+    '.card h3', '.card p', '.stat b', '.stat span',
+    '.agenda b', '.agenda span', '.iconrow .item span',
+    '.person b', '.person span',
+    '.tbl .tr > span', '.timeline .rules div', '.timeline .bar'
+  ].join(',');
 
   const deck = document.getElementById('deck');
   const nav = document.getElementById('nav');
@@ -67,8 +78,124 @@
     if (gridOpen) fitGrid();
   }
 
+  /* ---------- edit mode -------------------------------------------------- */
+
+  function setEditing(on) {
+    editing = on;
+    document.body.classList.toggle('editing', on);
+    slides.forEach(s => {
+      s.querySelectorAll(EDITABLE).forEach(el => {
+        if (on) el.setAttribute('contenteditable', 'true');
+        else el.removeAttribute('contenteditable');
+      });
+      /* Always rebuild the tool bar. A duplicated slide carries a cloned bar whose
+         handlers did not survive cloneNode, so reusing it leaves dead buttons. */
+      const old = s.querySelector('.slide-tools');
+      if (old) old.remove();
+      if (on) {
+        const bar = document.createElement('div');
+        bar.className = 'slide-tools';
+        bar.innerHTML = '<button data-dup title="duplicate slide">+</button>' +
+                        '<button data-del title="delete slide">&times;</button>';
+        bar.querySelector('[data-dup]').onclick = () => dupSlide(s);
+        bar.querySelector('[data-del]').onclick = () => delSlide(s);
+        s.appendChild(bar);
+      }
+    });
+    const b = nav && nav.querySelector('[data-edit]');
+    if (b) b.textContent = on ? 'done' : 'edit';
+    const sv = nav && nav.querySelector('[data-save]');
+    if (sv) sv.hidden = !on;
+  }
+
+  function reindex() {
+    slides = Array.from(document.querySelectorAll('#deck .slide'));
+    slides.forEach((s, k) => {
+      const p = s.querySelector('.pagenum');
+      if (p) p.textContent = k + 1;
+    });
+    if (grid) { grid.innerHTML = ''; delete grid.dataset.built; }
+    fit();
+  }
+
+  function dupSlide(s) {
+    const c = s.cloneNode(true);
+    c.classList.remove('active');
+    const t = c.querySelector('.slide-tools');
+    if (t) t.remove();
+    s.after(c);
+    reindex();
+    setEditing(true);
+    show(slides.indexOf(c));
+  }
+
+  function delSlide(s) {
+    if (slides.length < 2) return;
+    const at = slides.indexOf(s);
+    s.remove();
+    reindex();
+    setEditing(true);
+    show(Math.min(at, slides.length - 1));
+  }
+
+  /* Rebuild index.src.html from the live DOM and hand it back as a download.
+     Injected chrome (logo, page number, edit tools) is stripped so a rebuild
+     does not double it up. */
+  function saveSource() {
+    const copy = document.getElementById('deck').cloneNode(true);
+    copy.querySelectorAll('.logo, .pagenum, .slide-tools').forEach(e => e.remove());
+    copy.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
+    copy.querySelectorAll('.slide').forEach(e => {
+      e.classList.remove('active');
+      if (!e.getAttribute('style')) e.removeAttribute('style');
+    });
+    const lang = document.documentElement.getAttribute('lang') || 'en';
+    const src =
+`<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${document.title}</title>
+<link rel="stylesheet" href="wf-deck.css">
+</head>
+<body>
+
+${copy.outerHTML}
+
+<div id="nav">
+  <button data-prev>&lsaquo;</button>
+  <span id="counter"></span>
+  <button data-next>&rsaquo;</button>
+  <button data-grid>grid</button>
+  <button data-full>full</button>
+  <button data-edit>edit</button>
+  <button data-save hidden>save</button>
+</div>
+<div id="grid"></div>
+
+<script src="wf-deck.js"><\/script>
+</body>
+</html>
+`;
+    const url = URL.createObjectURL(new Blob([src], { type: 'text/html' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'index.src.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
   function key(e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    // while typing, only Escape is a shortcut
+    if (editing && e.target && e.target.isContentEditable) {
+      if (e.key === 'Escape') { e.target.blur(); setEditing(false); }
+      return;
+    }
+    if (editing && (e.key === 'e' || e.key === 'E' || e.key === 'Escape')) {
+      e.preventDefault(); setEditing(false); return;
+    }
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
         e.preventDefault(); show(i + 1); break;
@@ -81,6 +208,7 @@
                                    : document.documentElement.requestFullscreen();
         break;
       case 'o': case 'O': toggleGrid(); break;
+      case 'e': case 'E': e.preventDefault(); setEditing(true); break;
       case 'Escape': toggleGrid(false); break;
     }
   }
@@ -116,6 +244,8 @@
       nav.querySelector('[data-grid]') && (nav.querySelector('[data-grid]').onclick = () => toggleGrid());
       nav.querySelector('[data-full]') && (nav.querySelector('[data-full]').onclick = () =>
         document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+      nav.querySelector('[data-edit]') && (nav.querySelector('[data-edit]').onclick = () => setEditing(!editing));
+      nav.querySelector('[data-save]') && (nav.querySelector('[data-save]').onclick = saveSource);
     }
     // reveal nav briefly on load
     nav && (nav.classList.add('show'), setTimeout(() => nav.classList.remove('show'), 2200));
