@@ -96,6 +96,11 @@ def parse_slides(src: str):
             if rows:
                 blocks.append(("Table", rows))
 
+        for rf in divs(inner, r'\brefs\b'):
+            rows = re.findall(r"<h3>(.*?)</h3>\s*<p>(.*?)</p>", rf, re.S)
+            if rows:
+                blocks.append(("References", [f"{text_of(a)} — {text_of(b)}" for a, b in rows]))
+
         for st in divs(inner, r'\bstats\b'):
             rows = re.findall(r"<b>(.*?)</b>\s*<span>(.*?)</span>", st, re.S)
             if rows:
@@ -173,7 +178,7 @@ for n, s in enumerate(slides, 1):
         if label == "Table":
             for row, is_head in content:
                 para(row, size=9.5, color=GREY if is_head else INK, after=1)
-        elif label in ("Bullets", "Contents", "Cards", "Figures", "Timeline"):
+        elif label in ("Bullets", "Contents", "Cards", "Figures", "Timeline", "References"):
             for item in content:
                 p = doc.add_paragraph(style="List Bullet")
                 p.paragraph_format.space_after = Pt(1)
