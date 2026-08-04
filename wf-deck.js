@@ -9,6 +9,10 @@
   const STAGE_W = 960, STAGE_H = 540;
   let slides = [], i = 0, gridOpen = false, editing = false;
 
+  /* Comment and edit exist only if the nav declares them. Drop the buttons from
+     a client-facing deck and the shortcuts go with them. */
+  const REVIEW = !!document.querySelector('#nav [data-comment], #nav [data-edit]');
+
   /* Everything a person should be able to retype. Structure, layout and images
      are deliberately not editable — those belong in the source file. */
   const EDITABLE = [
@@ -322,11 +326,11 @@
   function key(e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // while typing, only Escape is a shortcut
-    if (editing && e.target && e.target.isContentEditable) {
+    if (REVIEW && editing && e.target && e.target.isContentEditable) {
       if (e.key === 'Escape') { e.target.blur(); setEditing(false); }
       return;
     }
-    if (editing && (e.key === 'e' || e.key === 'E' || e.key === 'Escape')) {
+    if (REVIEW && editing && (e.key === 'e' || e.key === 'E' || e.key === 'Escape')) {
       e.preventDefault(); setEditing(false); return;
     }
     switch (e.key) {
@@ -341,8 +345,8 @@
                                    : document.documentElement.requestFullscreen();
         break;
       case 'o': case 'O': toggleGrid(); break;
-      case 'e': case 'E': e.preventDefault(); setEditing(true); break;
-      case 'c': case 'C': e.preventDefault(); setCommenting(!commenting); break;
+      case 'e': case 'E': if (REVIEW) { e.preventDefault(); setEditing(true); } break;
+      case 'c': case 'C': if (REVIEW) { e.preventDefault(); setCommenting(!commenting); } break;
       case 'Escape': toggleGrid(false); setCommenting(false); break;
     }
   }
@@ -359,10 +363,12 @@
       }
     });
     fit();
-    snapshotText();
-    loadNotes();
-    bindNoteClicks();
-    renderPins();
+    if (REVIEW) {
+      snapshotText();
+      loadNotes();
+      bindNoteClicks();
+      renderPins();
+    }
     const start = parseInt(location.hash.slice(1), 10);
     show(Number.isFinite(start) && start > 0 ? start - 1 : 0, false);
 
