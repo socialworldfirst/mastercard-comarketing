@@ -37,6 +37,23 @@ if "--pull" in sys.argv or "--ship" in sys.argv:
     else:
         print("no newer edited source in ~/Downloads, using the local one")
 
+
+# --nogate publishes the deck as plain HTML, no password. Used when the audience
+# is the partner the deck is addressed to and the gate is only friction.
+if "--nogate" in sys.argv:
+    plain = (HERE / "index.src.html").read_text(encoding="utf-8")
+    plain = plain.replace('<meta name="robots" content="noindex">',
+                          '<meta name="robots" content="noindex,nofollow">')
+    (HERE / "index.html").write_text(plain, encoding="utf-8")
+    print("ungated build written: index.html is plain HTML, no password")
+    import shutil as _s2, subprocess as _sp
+    if _s2.which("rclone"):
+        _sp.run(["rclone", "copyto", str(HERE / "index.src.html"),
+                 f"gdrive:Claude_Backup/deck_sources/{HERE.name}.src.html"],
+                capture_output=True, timeout=90)
+        print("source backed up")
+    raise SystemExit(0)
+
 src = (HERE / "index.src.html").read_text(encoding="utf-8")
 
 # everything between <body> and the deck's <script> tag is the protected payload
