@@ -7,8 +7,9 @@ paragraphs, one block per slide — so editing feels like editing a document, no
 markup. The bracketed component labels are the only scaffolding, and they exist
 so an edit can be mapped back to the right element without guessing.
 
-    python3 deck_to_doc.py                # build .docx and upload as a Google Doc
-    python3 deck_to_doc.py --local        # build the .docx only, no upload
+    python3 deck_to_doc.py                     # build .docx and upload as a Google Doc
+    python3 deck_to_doc.py --local             # build the .docx only, no upload
+    python3 deck_to_doc.py --name my-doc       # name the Doc (a new name = a new Doc)
 
 Run from a deck folder (needs index.src.html alongside).
 """
@@ -186,7 +187,10 @@ for n, s in enumerate(slides, 1):
     for l in s["links"]:
         para(l, size=8.5, color=GREY, italic=True, after=1)
 
-out = HERE / f"{HERE.name}-content.docx"
+name = HERE.name + "-content"
+if "--name" in sys.argv:
+    name = sys.argv[sys.argv.index("--name") + 1]
+out = HERE / f"{name}.docx"
 doc.save(out)
 print(f"built {out.name} — {len(slides)} slides")
 
