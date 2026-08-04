@@ -361,6 +361,8 @@ html, body {
 .tbl .tr > span { flex: 1; }
 .tbl .tr > span:first-child { flex: 0 0 132px; font-weight: 500; }
 .tbl.wide .tr > span:first-child { flex: 0 0 176px; }
+/* for label columns that would otherwise wrap and grow the row height */
+.tbl.lbl-wide .tr > span:first-child { flex: 0 0 240px; }
 .tbl .tr.th {
   font-size: 12px; font-weight: 500; opacity: .68;
   padding-bottom: 6px;
