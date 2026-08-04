@@ -37,13 +37,21 @@ inner = body.group(1).strip()
 
 blob = json.dumps(encrypt_payload(inner))
 
+# Title and lang come from the source file, never hardcoded here — a stale title
+# leaks the previous deck's name onto the tab of a partner-facing page.
+src_all = (HERE / "index.src.html").read_text(encoding="utf-8")
+m = re.search(r"<title>(.*?)</title>", src_all, re.S)
+DOC_TITLE = m.group(1).strip() if m else HERE.name
+m = re.search(r"<html[^>]*\blang=[\"']([^\"']+)", src_all)
+DOC_LANG = m.group(1) if m else "en"
+
 html = """<!doctype html>
-<html lang="zh-CN">
+<html lang="__LANG__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Sourcing from China — 产品方案</title>
+<title>__TITLE__</title>
 <link rel="stylesheet" href="wf-deck.css">
 <style>
   body.locked { overflow: hidden; }
@@ -161,7 +169,8 @@ async function mcmSubmit(e) {
 </body>
 </html>
 """
-html = html.replace("__BLOB__", blob).replace("__LS__", LS_KEY)
+html = (html.replace("__BLOB__", blob).replace("__LS__", LS_KEY)
+            .replace("__TITLE__", DOC_TITLE).replace("__LANG__", DOC_LANG))
 (HERE / "index.html").write_text(html, encoding="utf-8")
 print(f"gated build written: {len(html)//1024}KB, payload {len(blob)//1024}KB, password '{PASSWORD}'")
 
