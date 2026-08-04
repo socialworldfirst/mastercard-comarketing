@@ -1,0 +1,431 @@
+/* ==========================================================================
+   WorldFirst deck engine — HTML port of the official WF PPT Template (Intl),
+   updated April 2025.
+
+   The stage is exactly 960 x 540 units and 1 unit = 1 px = 1 pt in the PPTX,
+   so every coordinate in reference/components.md drops straight in.
+   The stage is scaled to the viewport by wf-deck.js.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+:root {
+  /* theme "WF 17" */
+  --wf-pink:       #FF0051;
+  --wf-ink:        #1F2323;
+  --wf-white:      #FFFFFF;
+  --wf-cream:      #FFFEF6;
+  --wf-purple:     #32006D;   /* accent1 */
+  --wf-slate:      #484F56;   /* accent2 */
+  --wf-lilac:      #D8C9E8;   /* accent3 */
+  --wf-grey:       #D5D5D5;   /* accent4 */
+  --wf-purple-mid: #8F66C7;   /* accent5 */
+  --wf-warmgrey:   #90969A;   /* accent6 */
+  --wf-panel:      #ECEDEE;
+  --wf-navy:       #041E42;
+  --wf-link:       #0095FF;
+
+  --stage-w: 960;
+  --stage-h: 540;
+  --margin-l: 37.7px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0a0a0a;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- stage ------------------------------------------------------- */
+
+#deck {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Centred by an explicit translate rather than by flex/grid placement, so the
+   scale never depends on how the parent lays out an absolutely-positioned child. */
+.slide {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 960px;
+  height: 540px;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  display: none;
+  color: var(--wf-white);
+  font-weight: 400;
+}
+.slide.active { display: block; }
+
+/* backgrounds -------------------------------------------------------------
+   Placed with the same slight overscan as the template (-0.9, -0.4, 961.4 x 540.8) */
+.slide::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: -1px; width: 962px; height: 542px;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+.slide > * { position: relative; z-index: 1; }
+
+.bg-pink::before          { background-image: url('assets/backgrounds/content_pink.webp'); }
+.bg-light::before         { background-image: url('assets/backgrounds/content_light.webp'); }
+.bg-purple::before        { background-image: url('assets/backgrounds/content_purple.webp'); }
+.bg-cover::before         { background-image: url('assets/backgrounds/cover_dark_ribbon.webp'); }
+.bg-cover-ship::before    { background-image: url('assets/backgrounds/cover_dark_photo_ship.webp'); }
+.bg-cover-sme::before     { background-image: url('assets/backgrounds/cover_dark_photo_sme.webp'); }
+.bg-section::before       { background-image: url('assets/backgrounds/section_pink.webp'); }
+.bg-section-light::before { background-image: url('assets/backgrounds/section_light.webp'); }
+.bg-section-purple::before{ background-image: url('assets/backgrounds/section_purple.webp'); }
+.bg-quote::before         { background-image: url('assets/backgrounds/quote_light.webp'); }
+.bg-thanks::before        { background-image: url('assets/backgrounds/thankyou_pink.webp'); }
+
+/* light slides flip the ink.
+   bg-quote is NOT one of them — the "Quotes (Light)" layout is pink with white text. */
+.slide { --rule: rgba(255,255,255,.30); }
+.bg-light, .bg-section-light { color: var(--wf-ink); --rule: rgba(31,35,35,.16); }
+
+/* ---------- chrome ------------------------------------------------------ */
+
+/* content slides: logo top-right, 112.3 x 16.3 at (809.9, 44.6) */
+.slide > .logo {
+  position: absolute;
+  left: 809.9px; top: 44.6px; width: 112.3px; height: 16.3px;
+  background: url('assets/logos/worldfirst_white.webp') no-repeat center / contain;
+}
+.bg-light > .logo,
+.bg-section-light > .logo,
+.bg-section-purple > .logo {
+  background-image: url('assets/logos/worldfirst_pink.webp');
+}
+
+/* covers and section dividers: logo top-left, 141.1 x 20.5 at (37, 41.1) */
+.slide.is-cover > .logo,
+.slide.is-section > .logo,
+.slide.is-thanks > .logo {
+  left: 37px; top: 41.1px; width: 141.1px; height: 20.5px;
+}
+
+.slide > .pagenum {
+  position: absolute;
+  left: 856.9px; top: 491.1px; width: 65px;
+  font-size: 10px; line-height: 1.4; opacity: .85;
+}
+
+/* ---------- type -------------------------------------------------------- */
+
+.title {
+  position: absolute;
+  left: var(--margin-l); top: 27.6px; width: 828px;
+  margin: 0;
+  font-size: 32px; font-weight: 600; line-height: .9;
+  letter-spacing: -.005em;
+}
+/* keep title text clear of the logo */
+.title { padding-right: 60px; }
+
+.body {
+  position: absolute;
+  left: var(--margin-l); top: 104.5px; width: 551.6px;
+  margin: 0;
+  font-size: 18px; font-weight: 400; line-height: 1.42;
+}
+.body p { margin: 0 0 14px; }
+.body p:last-child { margin-bottom: 0; }
+.body ul { margin: 0 0 14px; padding-left: 18px; }
+.body li { margin-bottom: 6px; }
+.body.wide { width: 786px; }
+
+/* Cover. The cover slides override their layout placeholders: title and subheading
+   are ONE text block, 40 then 24, flowing straight on. Do not re-split them into two
+   absolutely-positioned boxes and do not take 32/20 from the layout — those defaults
+   are unused. Ribbon cover starts at y=180.7, the two photo covers at y=91.4. */
+.is-cover .title {
+  position: static; display: block;
+  margin: 0; padding: 0;
+  font-size: 40px; font-weight: 600; line-height: 1.05;
+}
+.is-cover .sub {
+  margin: 0; font-size: 24px; font-weight: 400; line-height: 1.2;
+}
+.is-cover .title, .is-cover .sub { width: 546.7px; }
+.slide.is-cover > .title { position: absolute; left: var(--margin-l); top: 180.7px; }
+.slide.is-cover > .sub   { position: absolute; left: var(--margin-l); top: 226.7px; }
+.is-cover.title-high > .title { top: 91.4px; width: 374.2px; }
+.is-cover.title-high > .sub   { top: 137.4px; width: 374.2px; }
+
+/* Section divider. The title is bottom-anchored so a two-line title grows upward
+   instead of running into the subheading, which sits at a fixed 227.
+   A one-line title lands on the template's 180.7. */
+.is-section .title { top: auto; bottom: 321.5px; width: 497.5px; }
+.is-section .sub {
+  position: absolute; left: var(--margin-l); top: 227px; width: 442px;
+  margin: 0; font-size: 18px; font-weight: 400;
+}
+
+/* pull quote — template box is 705.9 x 323.2, which is 7 lines at 40/1.16.
+   Longer quotes take .quote.sm (32px, 9 lines). Anything longer is not a pull quote. */
+.quote {
+  position: absolute;
+  left: var(--margin-l); top: 95.7px; width: 705.9px; max-height: 323.2px;
+  margin: 0; font-size: 40px; font-weight: 400; line-height: 1.16;
+}
+.quote.sm { font-size: 32px; line-height: 1.18; }
+.is-quote .title { top: 23.4px; font-size: 14px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
+
+/* thank you */
+.is-thanks .title {
+  top: 246px; left: 0; width: 960px; text-align: center;
+  font-size: 40px; line-height: 1;
+}
+
+/* ---------- components -------------------------------------------------- */
+
+/* Cards. Two variants, both from the template, both the same shape:
+   roundRect 238.1 x 225.3, radius 5.5, no border, linear gradient white -> ECEDEE at 35%.
+     .cards         template slide 20 — icon, pink 20pt title, 10pt description
+     .cards.simple  template slide 13 — icon, dark 20pt label, no description
+   There is no transparent/outlined card in the template. Do not invent one. */
+.cards {
+  position: absolute;
+  left: 94.3px; top: 157.3px;
+  display: flex; gap: 27.7px;
+}
+.card {
+  position: relative;
+  width: 238.1px; height: 225.3px;
+  background: linear-gradient(180deg, #FFFFFF 0%, var(--wf-panel) 35%);
+  border-radius: 5.5px;
+  text-align: center;
+  color: var(--wf-ink);
+}
+.card .icon {
+  position: absolute; left: 0; right: 0; top: 32px; height: 76.8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.card .icon img { max-height: 100%; max-width: 96px; width: auto; }
+.card h3 {
+  position: absolute; left: 0; right: 0; top: 132.4px;
+  margin: 0; font-size: 20px; font-weight: 500; color: var(--wf-pink); line-height: 1.4;
+}
+.card p {
+  position: absolute; left: 24px; right: 24px; top: 171.3px;
+  margin: 0; font-size: 10px; line-height: 1.5;
+}
+
+/* slide 13 variant: label only, sits lower */
+.cards.simple .card h3 { top: 154.5px; color: var(--wf-ink); }
+
+/* stat row — template slide 15. Exactly four stats, unevenly spaced because the
+   WorldFirst wordmark sits between the 2nd and 3rd. Column centres are fixed:
+   207.8 / 349.3 / 619.3 / 754.5. Icons y=226, numbers y=278.5, captions y=320.7. */
+.stats { position: absolute; inset: 0; }
+.stat { position: absolute; top: 226px; width: 160px; margin-left: -80px; text-align: center; }
+.stat:nth-child(1) { left: 207.8px; }
+.stat:nth-child(2) { left: 349.3px; }
+.stat:nth-child(3) { left: 619.3px; }
+.stat:nth-child(4) { left: 754.5px; }
+.stat .icon { height: 41px; }
+.stat .icon img { height: 100%; }
+.stat b {
+  position: absolute; left: 0; right: 0; top: 52.5px;
+  font-size: 28px; font-weight: 400; line-height: 1.35;
+}
+.stat span {
+  position: absolute; left: 0; right: 0; top: 94.7px;
+  font-size: 10px; line-height: 1.6; opacity: .9;
+}
+/* centre wordmark — template slide 15: 140.2 x 20.4 at (411.2, 236.8) */
+.stats .wordmark {
+  position: absolute; left: 411.2px; top: 236.8px; width: 140.2px; height: 20.4px;
+  background: url('assets/logos/worldfirst_white.webp') no-repeat center / contain;
+}
+
+/* the recurring circle motif: 391.2 dia centred at (479.6, 251.8) */
+.circle-motif {
+  position: absolute;
+  left: 284.4px; top: 56.2px; width: 391.2px; height: 391.2px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.45);
+}
+.circle-motif.filled { background: var(--wf-panel); border: none; }
+
+/* icon row — template slide 14: labels 141.9 wide at x=109.1 / 306.6 / 502.9 / 701.1,
+   y=202; icons ~55 tall centred on each column at y=271.5 */
+.iconrow {
+  position: absolute;
+  left: 109.1px; top: 202px; width: 733.9px; height: 130px;
+  display: flex; justify-content: space-between; text-align: center;
+}
+.iconrow .item { position: relative; width: 141.9px; }
+.iconrow .item span {
+  position: absolute; left: 0; right: 0; top: 0;
+  font-size: 16px; font-weight: 500; line-height: 1.4;
+}
+.iconrow .item img { position: absolute; left: 50%; top: 69.5px; height: 55px; transform: translateX(-50%); }
+
+/* people row — template slide 21: avatars 71.8 at x=76 / 369.8 / 658.6, y=223.2;
+   text block 127.6 wide starting 88.8 right of each avatar, y=234.3 */
+.people { position: absolute; inset: 0; }
+.person { position: absolute; top: 223.2px; }
+.person:nth-child(1) { left: 76px; }
+.person:nth-child(2) { left: 369.8px; }
+.person:nth-child(3) { left: 658.6px; }
+.person .avatar {
+  position: absolute; left: 0; top: 0;
+  width: 71.8px; height: 71.8px; border-radius: 50%;
+  background: var(--wf-panel) center / cover;
+}
+.person .who { position: absolute; left: 88.8px; top: 11.1px; width: 127.6px; }
+.person b { display: block; font-size: 20px; font-weight: 400; line-height: 1.3; }
+.person span { display: block; font-size: 12px; margin-top: 2px; opacity: .9; }
+
+/* timeline — template slide 27 */
+.timeline { position: absolute; left: 48.4px; top: 176.4px; width: 800px; height: 271.7px; }
+.timeline .rules { position: absolute; inset: 0; display: flex; }
+.timeline .rules div {
+  flex: 1;
+  border-left: 1px solid currentColor;
+  padding: 0 0 0 10.2px;
+  font-size: 14px;
+}
+.timeline .bars { position: absolute; left: 2px; top: 40px; right: 0; }
+.timeline .bar {
+  height: 36.4px; margin-bottom: 4px;
+  border-radius: 4.6px;   /* roundRect adj 12630 */
+  /* the template's <a:ln> is noFill — the bars have no outline */
+  display: flex; align-items: center; padding-left: 20px;
+  font-size: 14px; color: var(--wf-white);
+}
+.timeline .bar.p1 { background: var(--wf-purple); }
+.timeline .bar.p2 { background: var(--wf-purple-mid); }
+.timeline .bar.p3 { background: var(--wf-lilac); color: var(--wf-ink); }
+.timeline .bar.p4 { background: var(--wf-warmgrey); }
+.timeline .bar.p5 { background: var(--wf-grey); color: var(--wf-ink); }
+
+/* image placeholders — template slides 12, 29, 30, 31.
+   Plain 3-up (slide 31): 288.9 x 362.2 at y=104.6, x = 38 / 335.1 / 633.
+   With captions (slide 12): drops to y=124.3 x 342.6, captions on the 94.3 line. */
+.figs { position: absolute; display: flex; gap: 8.2px; }
+.figs.three { left: 38px; top: 104.6px; }
+.figs.three .fig { width: 288.9px; height: 362.2px; }
+.figs.three.capped { top: 124.3px; }
+.figs.three.capped .fig { height: 342.6px; }
+.figs .col { position: relative; width: 288.9px; }
+.figs .col .cap { position: absolute; top: -30px; left: 0; font-size: 20px; font-weight: 500; }
+.fig {
+  background: #B9BDC4 center / cover;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fig img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.figs .cap { font-size: 16px; font-weight: 500; }
+
+/* agenda — template slide 5: items at x=471.5, y=185 / 268.3 / 355, w=280.7 */
+.agenda { position: absolute; left: 471.5px; top: 185px; width: 280.7px; }
+.agenda .item { height: 85px; }
+.agenda .item b { display: block; font-size: 32px; font-weight: 400; line-height: 1.2; }
+.agenda .item span { display: block; font-size: 12px; margin-top: 4px; opacity: .9; }
+
+/* generic panel */
+.panel {
+  background: var(--wf-panel);
+  border-radius: 5.5px;
+  color: var(--wf-ink);
+}
+
+/* Table. The template has no table slide, so this is built from template primitives
+   only: the timeline's 1px currentColor rules, the body type scale, and no fill.
+   Never give it a coloured header band or zebra rows — the background carries the
+   brand, the data does not. */
+.tbl {
+  position: absolute;
+  left: var(--margin-l); top: 150px; width: 551.6px;
+  font-size: 14px; line-height: 1.35;
+}
+.tbl.wide { width: 884.6px; }
+.tbl .tr {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.tbl .tr > span { flex: 1; }
+.tbl .tr > span:first-child { flex: 0 0 132px; font-weight: 500; }
+.tbl.wide .tr > span:first-child { flex: 0 0 176px; }
+.tbl .tr.th {
+  font-size: 12px; font-weight: 500; opacity: .68;
+  padding-bottom: 6px;
+}
+.tbl .tr.th > span { font-weight: 500; }
+/* value emphasis by weight, not by colour — reads on pink, light and purple alike */
+.tbl .y { font-weight: 500; }
+.tbl .tr > span:not(.y):not(:first-child) { opacity: .82; }
+
+/* footnote under a table or figure */
+.note {
+  position: absolute;
+  left: var(--margin-l); bottom: 46px; width: 700px;
+  margin: 0; font-size: 11px; line-height: 1.5; opacity: .72;
+}
+
+/* a block of legal or quoted copy, sitting on the template's panel surface */
+.quotebox {
+  position: absolute;
+  left: var(--margin-l); top: 210px; width: 884.6px;
+  background: var(--wf-panel); color: var(--wf-ink);
+  border-radius: 5.5px;
+  padding: 22px 26px;
+  font-size: 14px; line-height: 1.6;
+}
+
+/* ---------- navigation chrome ------------------------------------------ */
+
+#nav {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  padding: 7px 14px; border-radius: 999px;
+  background: rgba(20,20,20,.72);
+  backdrop-filter: blur(10px);
+  font-size: 12px; color: #fff;
+  opacity: 0; transition: opacity .25s;
+  z-index: 50;
+}
+#deck:hover ~ #nav, #nav:hover, #nav.show { opacity: 1; }
+#nav button {
+  all: unset; cursor: pointer; padding: 2px 7px; border-radius: 5px; line-height: 1;
+}
+#nav button:hover { background: rgba(255,255,255,.14); }
+#counter { font-variant-numeric: tabular-nums; opacity: .75; min-width: 44px; text-align: center; }
+
+/* overview grid */
+#grid {
+  position: fixed; inset: 0; z-index: 60;
+  background: #0d0d0d; overflow-y: auto;
+  display: none; padding: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+#grid.show { display: grid; }
+#grid .thumb { position: relative; cursor: pointer; border-radius: 4px; overflow: hidden; }
+#grid .thumb .holder { width: 100%; aspect-ratio: 16/9; position: relative; overflow: hidden; }
+#grid .thumb .holder .slide {
+  display: block; position: absolute; left: 0; top: 0;
+  transform: scale(0);              /* fitGrid replaces this once measurable */
+  transform-origin: top left; pointer-events: none;
+}
+#grid .thumb .lbl {
+  position: absolute; left: 6px; bottom: 5px;
+  font-size: 10px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7);
+}
+#grid .thumb:hover { outline: 2px solid var(--wf-pink); }
+
+@media print { #nav, #grid { display: none !important; } }
